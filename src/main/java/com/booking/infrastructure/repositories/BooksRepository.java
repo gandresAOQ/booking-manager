@@ -57,9 +57,9 @@ public class BooksRepository implements IBooksRepository {
                 .execute(Tuple.tuple(List.of(request.getId(),
                                         request.getName(),
                                         request.getAuthor(),
-                                        Integer.parseInt(request.getPrice()),
+                                        request.getPrice(),
                                         request.getLanguage(),
-                                        Integer.parseInt(request.getPages()),
+                                        request.getPages(),
                                         request.getFormat())));
     }
 
@@ -72,9 +72,9 @@ public class BooksRepository implements IBooksRepository {
                         request.getId(),
                         request.getName(),
                         request.getAuthor(),
-                        Integer.parseInt(request.getPrice()),
+                        request.getPrice(),
                         request.getLanguage(),
-                        Integer.parseInt(request.getPages()),
+                        request.getPages(),
                         request.getFormat())));
     }
 
