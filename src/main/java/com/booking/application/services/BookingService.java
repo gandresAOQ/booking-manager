@@ -3,101 +3,76 @@ package com.booking.application.services;
 import com.booking.application.ports.IBookingService;
 import com.booking.grpc.Booking;
 import com.booking.infrastructure.contracts.IBooksRepository;
-import io.netty.handler.codec.http.HttpResponseStatus;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import io.vertx.mutiny.sqlclient.RowSet;
-import io.vertx.mutiny.sqlclient.Row;
 import java.util.NoSuchElementException;
 
 @ApplicationScoped
 public class BookingService implements IBookingService {
+
+    private static final String CREATED_COMMENT = "Book Created";
+    private static final String UPDATED_COMMENT = "Book Updated";
+    private static final String DELETED_COMMENT = "Book Deleted";
 
     @Inject
     IBooksRepository booksRepository;
 
     @Override
     public Uni<Booking.BookingResponse> getBook(Booking.BookingRequestId request) {
-        System.out.println("Acá");
         return booksRepository.findById(request.getId())
                 .onItem().transform(row -> Booking.BookingResponse.newBuilder()
-                        .setStatus(HttpResponseStatus.OK.code())
                         .setPayload(row.toJson().encode())
                         .build())
-                .onFailure(NoSuchElementException.class).recoverWithItem(throwable ->
-                        Booking.BookingResponse.newBuilder()
-                                .setStatus(HttpResponseStatus.NOT_FOUND.code())
-                                .setPayload(throwable.getMessage())
-                                .build())
-                .onFailure().recoverWithItem(throwable -> Booking.BookingResponse.newBuilder()
-                        .setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR.code())
-                        .setPayload(throwable.getMessage())
-                        .build());
+                .onFailure(NoSuchElementException.class).transform(throwable ->
+                        new StatusRuntimeException(Status.NOT_FOUND.withDescription(throwable.getMessage())))
+                .onFailure().transform(throwable ->
+                        new StatusRuntimeException(Status.INTERNAL.withDescription(throwable.getMessage())));
     }
 
     @Override
     public Uni<Booking.BookingResponse> getAllBooks(Booking.BookingRequestPaged request) {
-        System.out.println("Acá");
         return booksRepository.findAll(Integer.parseInt(request.getPage()), 10)
                 .onItem().transform(res -> Booking.BookingResponse.newBuilder()
-                        .setStatus(HttpResponseStatus.OK.code())
                         .setPayload(res.encode())
                         .build())
-                .onFailure(NoSuchElementException.class).recoverWithItem(throwable ->
-                        Booking.BookingResponse.newBuilder()
-                                .setStatus(HttpResponseStatus.NOT_FOUND.code())
-                                .setPayload(throwable.getMessage())
-                                .build())
-                .onFailure().recoverWithItem(throwable -> Booking.BookingResponse.newBuilder()
-                        .setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR.code())
-                        .setPayload(throwable.getMessage())
-                        .build());
-
+                .onFailure(NoSuchElementException.class).transform(throwable ->
+                        new StatusRuntimeException(Status.NOT_FOUND.withDescription(throwable.getMessage())))
+                .onFailure().transform(throwable ->
+                        new StatusRuntimeException(Status.INTERNAL.withDescription(throwable.getMessage())));
     }
 
     @Override
     public Uni<Booking.BookingResponse> createBook(Booking.BookingRequest request) {
         return booksRepository.save(request)
                 .onItem().transform(res -> Booking.BookingResponse.newBuilder()
-                        .setStatus(HttpResponseStatus.OK.code())
-                        .setPayload(toJson(res))
+                        .setPayload(CREATED_COMMENT)
                         .build())
-                .onFailure().recoverWithItem(throwable -> Booking.BookingResponse.newBuilder()
-                        .setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR.code())
-                        .setPayload(throwable.getMessage())
-                        .build());
+                .onFailure().transform(throwable ->
+                        new StatusRuntimeException(Status.INTERNAL.withDescription(throwable.getMessage())));
     }
 
     @Override
     public Uni<Booking.BookingResponse> updateBook(Booking.BookingRequest request) {
         return booksRepository.update(request)
                 .onItem().transform(res -> Booking.BookingResponse.newBuilder()
-                        .setStatus(HttpResponseStatus.OK.code())
-                        .setPayload(toJson(res))
+                        .setPayload(UPDATED_COMMENT)
                         .build())
-                .onFailure().recoverWithItem(throwable -> Booking.BookingResponse.newBuilder()
-                        .setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR.code())
-                        .setPayload(throwable.getMessage())
-                        .build());
+                .onFailure().transform(throwable ->
+                        new StatusRuntimeException(Status.INTERNAL.withDescription(throwable.getMessage())));
     }
 
     @Override
     public Uni<Booking.BookingResponse> deleteBook(Booking.BookingRequestId request) {
         return booksRepository.deleteById(request.getId())
                 .onItem().transform(res -> Booking.BookingResponse.newBuilder()
-                        .setStatus(HttpResponseStatus.OK.code())
-                        .setPayload(toJson(res))
+                        .setPayload(DELETED_COMMENT)
                         .build())
-                .onFailure().recoverWithItem(throwable -> Booking.BookingResponse.newBuilder()
-                        .setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR.code())
-                        .setPayload(throwable.getMessage())
-                        .build());
+                .onFailure().transform(throwable ->
+                        new StatusRuntimeException(Status.INTERNAL.withDescription(throwable.getMessage())));
     }
 
-    private String toJson(RowSet<Row> rowSet) {
-        Row row = rowSet.iterator().next();
-        return row.toJson().encode();
-    }
 }
