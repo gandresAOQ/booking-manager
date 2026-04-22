@@ -29,7 +29,7 @@ public class BookingService implements IBookingService {
                         .build())
                 .onFailure(NoSuchElementException.class).transform(throwable ->
                         new StatusRuntimeException(Status.NOT_FOUND.withDescription(throwable.getMessage())))
-                .onFailure().transform(throwable ->
+                .onFailure(t -> !(t instanceof StatusRuntimeException)).transform(throwable ->
                         new StatusRuntimeException(Status.INTERNAL.withDescription(throwable.getMessage())));
     }
 
@@ -41,7 +41,7 @@ public class BookingService implements IBookingService {
                         .build())
                 .onFailure(NoSuchElementException.class).transform(throwable ->
                         new StatusRuntimeException(Status.NOT_FOUND.withDescription(throwable.getMessage())))
-                .onFailure().transform(throwable ->
+                .onFailure(t -> !(t instanceof StatusRuntimeException)).transform(throwable ->
                         new StatusRuntimeException(Status.INTERNAL.withDescription(throwable.getMessage())));
     }
 
